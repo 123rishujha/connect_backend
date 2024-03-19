@@ -1,5 +1,6 @@
 const express = require("express");
 const routes = require("./routes/index.js");
+const makeConnection = require("./connection.js");
 
 const app = express();
 
@@ -12,6 +13,7 @@ const PORT = 8080;
 app.listen(PORT, async () => {
   try {
     await makeConnection();
+    console.log("connect to server");
   } catch (error) {
     console.log("error while connecting to server", error);
   }
