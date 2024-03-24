@@ -7,13 +7,15 @@ const app = express();
 app.use(express.json());
 
 app.use("/auth", routes.authRouter);
+app.get("/", async (req, res) => {
+  res.send("working");
+});
 
 const PORT = 8080;
 
 app.listen(PORT, async () => {
   try {
     await makeConnection();
-    console.log("connect to server");
   } catch (error) {
     console.log("error while connecting to server", error);
   }
