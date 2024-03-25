@@ -41,10 +41,14 @@ const sendMailsFunc = async (to, subject, html) => {
     };
 
     const message = await transporter.sendMail(mailOptons);
-    return message;
+    return { success: true, msg: message };
   } catch (error) {
-    console.log("error while sending mail", error);
-    return;
+    console.log("error while sending mail in nodemailer", error);
+    return {
+      success: false,
+      msg: "error while sending mail in nodemailer",
+      err: error,
+    };
   }
 };
 

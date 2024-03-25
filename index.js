@@ -7,9 +7,6 @@ const app = express();
 app.use(express.json());
 
 app.use("/auth", routes.authRouter);
-app.get("/", async (req, res) => {
-  res.send("working");
-});
 
 const PORT = 8080;
 

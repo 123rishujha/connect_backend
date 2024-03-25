@@ -4,8 +4,8 @@ dotenv.config();
 
 const generateTokens = {
   activateAccountToken: (payload) => {
-    let tempToken = jwt.sign(payload, process.env.activateAccountTokenKey, {
-      expiresIn: "5m",
+    let tempToken = jwt.sign(payload, process.env.ACTIVATE_ACCOUNT_TOKEN_KEY, {
+      expiresIn: "10m",
     });
     return tempToken;
   },
