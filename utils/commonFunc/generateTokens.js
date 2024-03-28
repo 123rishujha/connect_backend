@@ -9,6 +9,18 @@ const generateTokens = {
     });
     return tempToken;
   },
+  accessToken: (payload) => {
+    let tempToken = jwt.sign(payload, process.env.ACCESS_TOKEN_KEY, {
+      expiresIn: "7h",
+    });
+    return tempToken;
+  },
+  refreshToken: (payload) => {
+    let tempToken = jwt.sign(payload, process.env.REFRESH_TOKEN_KEY, {
+      expiresIn: "30d",
+    });
+    return tempToken;
+  },
 };
 
 module.exports = generateTokens;

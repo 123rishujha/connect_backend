@@ -140,5 +140,51 @@ const authCtrl = {
         .json({ success: false, msg: "Internal Server Error", err: error });
     }
   },
+  login: async (req, res) => {
+    const { email, password } = req.body;
+    try {
+      let userFound = await UserModel.findOne({ email });
+      if (userFound) {
+        const passwordMatched = await bcrypt.compare(
+          password, // hashed
+          userFound.password // plain
+        );
+        if (!passwordMatched) {
+          return res
+            .status(400)
+            .json({ success: false, msg: "wrong credential" });
+        }
+
+        const refreshToken = generateTokens.refreshToken({
+          userId: userFound._id,
+        });
+        const accesssToken = generateTokens.accessToken({
+          userId: userFound._id,
+        });
+
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          path: "auth/refresh_token",
+          maxAge: 30 * 24 * 60 * 60 * 1000, // 2 days
+        });
+
+        res.status(200).json({
+          success: true,
+          msg: "Login Successfull",
+          data: {
+            accesssToken,
+            user: { ...userFound._doc, password: "" },
+          },
+        });
+      } else {
+        res.status(400).json({ success: false, msg: "Wrong email address" });
+      }
+    } catch (error) {
+      console.log("error in login ctrl", error);
+      res
+        .status(500)
+        .json({ success: false, msg: "Internal Server Error", err: error });
+    }
+  },
 };
 module.exports = authCtrl;
