@@ -189,6 +189,22 @@ const authCtrl = {
         .json({ success: false, msg: "Internal Server Error", err: error });
     }
   },
+  logout: async (req, res) => {
+    if (!req.user) {
+      return res
+        .status(200)
+        .json({
+          success: false,
+          message: "Invalid Authentication User not exist in req body",
+        });
+    }
+    try {
+      res.clearCookie("refreshToken", { path: "auth/refresh-token" });
+      res.status(200).json({ success: true, msg: "Logout Success!" });
+    } catch (error) {
+      res.status(500).json({ success: false, msg: "Internal Server Error" });
+    }
+  },
   refreshToken: async (req, res) => {
     const token = req.cookies?.refreshToken;
     if (!token) {
