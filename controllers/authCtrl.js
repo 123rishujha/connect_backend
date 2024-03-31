@@ -4,6 +4,9 @@ const bcrypt = require("bcrypt");
 const { UserModel } = require("../models/userModel");
 const generateTokens = require("../utils/commonFunc/generateTokens");
 const { sendMailsFunc } = require("../utils/commonFunc/sendMail");
+const {
+  checkTokenExpiryErr,
+} = require("../utils/commonFunc/checkTokenExpiryErr");
 const fs = require("fs");
 const path = require("path");
 
@@ -164,7 +167,7 @@ const authCtrl = {
 
         res.cookie("refreshToken", refreshToken, {
           httpOnly: true,
-          path: "auth/refresh_token",
+          path: "auth/refresh-token",
           maxAge: 30 * 24 * 60 * 60 * 1000, // 2 days
         });
 
@@ -184,6 +187,44 @@ const authCtrl = {
       res
         .status(500)
         .json({ success: false, msg: "Internal Server Error", err: error });
+    }
+  },
+  refreshToken: async (req, res) => {
+    const token = req.cookies?.refreshToken;
+    if (!token) {
+      return res.status(400).json({ success: false, msg: "Please Login Now" });
+    }
+
+    try {
+      let decoded = jwt.verify(token, `${process.env.REFRESH_TOKEN_KEY}`);
+      // console.log("decoded", decoded);
+      if (!decoded.userId) {
+        return res
+          .status(400)
+          .json({ success: false, msg: "Please Login Now" });
+      }
+
+      const user = await UserModel.findById(decoded.userId).select("-password");
+
+      if (!user) {
+        return res.status(400).json({ success: false, msg: "Please Login" });
+      } else {
+        const accesssToken = generateTokens.accessToken({
+          userId: user._id,
+        });
+        res.status(200).json({ success: true, accesssToken, user });
+      }
+    } catch (err) {
+      console.log("error in refresh token get", JSON.stringify(err));
+
+      let tokenExpiredError = checkTokenExpiryErr(err);
+      if (tokenExpiredError) {
+        res.status(400).json(tokenExpiredError);
+      } else {
+        res
+          .status(500)
+          .json({ success: false, msg: "Internal server error", err: err });
+      }
     }
   },
 };
