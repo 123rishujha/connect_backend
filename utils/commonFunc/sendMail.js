@@ -16,6 +16,8 @@ const sendMailsFunc = async (to, subject, html) => {
     OAUTH_PLAYGROUND
   );
 
+  console.log("xyz", CLIENT_ID, CLIENT_SECRET);
+
   oauthClient.setCredentials({ refresh_token: OAUTH_REFRESH_TOKEN });
 
   try {
@@ -43,7 +45,10 @@ const sendMailsFunc = async (to, subject, html) => {
     const message = await transporter.sendMail(mailOptons);
     return { success: true, msg: message };
   } catch (error) {
-    console.log("error while sending mail in nodemailer", error);
+    console.log(
+      "error while sending mail in nodemailer---------------------",
+      error
+    );
     return {
       success: false,
       msg: "error while sending mail in nodemailer",
@@ -55,3 +60,4 @@ const sendMailsFunc = async (to, subject, html) => {
 module.exports = {
   sendMailsFunc,
 };
+// http://192.168.1.9:8080
