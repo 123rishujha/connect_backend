@@ -31,7 +31,7 @@ const authorize = async (req, res, next) => {
   } catch (error) {
     let tokenExpiredError = checkTokenExpiryErr(error);
     if (tokenExpiredError) {
-      res.status(400).json(tokenExpiredError);
+      res.status(403).json(tokenExpiredError);
     } else {
       res.status(500).json({ success: false, msg: "Internal server error" });
     }

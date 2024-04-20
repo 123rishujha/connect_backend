@@ -41,7 +41,7 @@ const authCtrl = {
           msg: "User already exist with provided email",
         });
       } else {
-        const hashedPassword = await bcrypt.hash(password, 5);
+        const hashedPassword = await bcrypt.hash(password, 12);
         const userObj = {
           avatar,
           username,
@@ -191,12 +191,10 @@ const authCtrl = {
   },
   logout: async (req, res) => {
     if (!req.user) {
-      return res
-        .status(200)
-        .json({
-          success: false,
-          message: "Invalid Authentication User not exist in req body",
-        });
+      return res.status(200).json({
+        success: false,
+        message: "Invalid Authentication User not exist in req body",
+      });
     }
     try {
       res.clearCookie("refreshToken", { path: "auth/refresh-token" });
@@ -241,6 +239,35 @@ const authCtrl = {
           .status(500)
           .json({ success: false, msg: "Internal server error", err: err });
       }
+    }
+  },
+  resetPassword: async (req, res) => {
+    const { password } = req.body;
+    if (req.user) {
+      try {
+        const hashedPassword = await bcrypt.hash(password, 12);
+        if (hashedPassword) {
+          await UserModel.findOneAndUpdate(
+            { _id: req.user._id },
+            { password: hashedPassword }
+          );
+          //findByIdAndUpdate
+          res
+            .status(200)
+            .json({ success: true, msg: "Password updated successfully" });
+        } else {
+          return res.status(500).json({
+            success: false,
+            msg: "something went wrong during hashing",
+          });
+        }
+      } catch (error) {
+        res
+          .status(500)
+          .json({ success: false, msg: "Internal server error", err: error });
+      }
+    } else {
+      res.status(400).json({ success: false, msg: "User not found" });
     }
   },
 };
