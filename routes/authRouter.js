@@ -10,5 +10,6 @@ authRouter.post("/login", authCtrl.login);
 authRouter.post("/logout", authorize, authCtrl.logout);
 authRouter.get("/refresh-token", authCtrl.refreshToken);
 authRouter.post("/reset_password", authorize, authCtrl.resetPassword);
+authRouter.post("/forgot_password", authCtrl.forgotPassword);
 
 module.exports = authRouter;

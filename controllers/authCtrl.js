@@ -63,7 +63,8 @@ const authCtrl = {
           verificationLink
         );
         const sendMail = await sendMailsFunc(
-          "jharishu796@gmail.com",
+          // "jharishu796@gmail.com",
+          email,
           "Verifiy Your Email",
           htmlContent
         );
@@ -268,6 +269,43 @@ const authCtrl = {
       }
     } else {
       res.status(400).json({ success: false, msg: "User not found" });
+    }
+  },
+  forgotPassword: async (req, res) => {
+    const { email } = req.body;
+    try {
+      const user = await UserModel.findOne({ email });
+      if (!user)
+        return res
+          .status(400)
+          .json({ success: false, msg: "User not found with provided email" });
+      const accessToken = generateTokens.accessToken({ userId: user._id });
+      const forgotUrl = `${process.env.CLIENT_URL}/forgot_password/${accessToken}`;
+      let htmlContent = fs.readFileSync(
+        path.join(__dirname, "..", "public", "forgotPassword.html"),
+        "utf8"
+      );
+      htmlContent = htmlContent.replace(/resetPasswordLink/g, forgotUrl);
+
+      const sendMail = await sendMailsFunc(
+        email,
+        "Forgot Password",
+        htmlContent
+      );
+      if (sendMail?.success) {
+        res.status(200).json({ success: true, msg: "Plase check your email." });
+      } else {
+        res.status(400).json({
+          success: false,
+          msg: "Something went wrong",
+          err: sendMail?.err,
+        });
+      }
+    } catch (err) {
+      console.log("error in forgot password", err);
+      res
+        .status(500)
+        .json({ success: false, msg: "Internal server error", err });
     }
   },
 };
