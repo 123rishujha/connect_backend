@@ -194,7 +194,7 @@ const authCtrl = {
     if (!req.user) {
       return res.status(200).json({
         success: false,
-        message: "Invalid Authentication User not exist in req body",
+        msg: "Invalid Authentication User not exist in req body",
       });
     }
     try {
