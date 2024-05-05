@@ -168,7 +168,7 @@ const authCtrl = {
 
         res.cookie("refreshToken", refreshToken, {
           httpOnly: true,
-          // path: "/auth/refresh-token",
+          path: "/auth/refresh-token",
           maxAge: 30 * 24 * 60 * 60 * 1000, // 2 days
         });
 
