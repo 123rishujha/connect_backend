@@ -1,16 +1,26 @@
 require("dotenv").config();
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const { Server } = require("socket.io");
 const routes = require("./routes/index.js");
 const makeConnection = require("./connection.js");
-const cookieParser = require("cookie-parser");
+const initializeSocket = require("./utils/socket/initializeSocket.js");
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: `${process.env.CLIENT_URL}`,
+  },
+});
 
 app.use(
   cors({
-    // origin: `${process.env.CLIENT_URL}`,
-    origin: "http://localhost:3000",
+    origin: `${process.env.CLIENT_URL}`,
+    // origin: "http://localhost:3000",
     credentials: true,
   })
 );
@@ -22,7 +32,7 @@ app.use("/auth", routes.authRouter);
 
 const PORT = 8080;
 
-app.listen(PORT, async () => {
+server.listen(PORT, async () => {
   try {
     await makeConnection();
   } catch (error) {
@@ -30,3 +40,5 @@ app.listen(PORT, async () => {
   }
   console.log("server is running on", PORT);
 });
+
+initializeSocket(io);

@@ -227,7 +227,7 @@ const authCtrl = {
         const accesssToken = generateTokens.accessToken({
           userId: user._id,
         });
-        res.status(200).json({ success: true, accesssToken, user });
+        res.status(200).json({ success: true, data: { accesssToken, user } });
       }
     } catch (err) {
       console.log("error in refresh token get", JSON.stringify(err));
