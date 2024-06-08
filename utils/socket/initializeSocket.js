@@ -33,9 +33,11 @@ const initializeSocket = (io) => {
     }
   };
 
+  const handleReconnect = (socket, socketId) => {
+    socket.to(socketId).emit("needReconnect");
+  };
+
   io.on("connection", (socket) => {
-    console.log("User connected", socket.id);
-    // activeUsers.onlineUser[socket.id] = true;
     activeUsers.online.set(socket.id, true);
     // notify all the sockets that new user come online
     emitOnlineUser();
@@ -52,6 +54,10 @@ const initializeSocket = (io) => {
         socketId: socketId,
         data: data,
       });
+      console.log(
+        "909 after joing pending-entries",
+        pendingConnections.textChat.entries()
+      );
       emitOnlineUser();
     });
 
@@ -61,6 +67,10 @@ const initializeSocket = (io) => {
       if (pendingConnections.textChat.size) {
         let availableUser = null;
         let findingInMap = pendingConnections.textChat;
+        console.log(
+          "909 before connection entries line 70",
+          findingInMap.entries()
+        );
         for (let [_, value] of findingInMap.entries()) {
           if (value.socketId !== socketId) {
             availableUser = value;
@@ -88,32 +98,98 @@ const initializeSocket = (io) => {
         } else {
           console.log("909 no user available for connection");
         }
-        console.log(
-          "909 establishedConnections",
-          establishedConnections.textChat.entries()
-        );
       } else {
         console.log("909 no user active now");
       }
+      console.log(
+        "909 connection code completion 105",
+        establishedConnections?.textChat?.entries(),
+        pendingConnections?.textChat?.entries()
+      );
     });
 
+    // skip conversation with a user and connect with someone else
+    //socketId => socketId of person who want to skip the chat
     socket.on("skipChat", ({ socketId, roomType }) => {
       if (roomType === ROOM_TYPE_CONST.text) {
         let connectdWithUser = establishedConnections.textChat.get(socketId);
+        let userWantToSkip = establishedConnections.textChat.get(
+          connectdWithUser?.socketId
+        );
+
         establishedConnections.textChat.delete(connectdWithUser.socketId);
         establishedConnections.textChat.delete(socketId);
 
         //again move users to pending connections
-        pendingConnections.textChat.set(socketId);
-        pendingConnections.textChat.set(connectdWithUser.socketId);
+        if (userWantToSkip) {
+          pendingConnections.textChat.set(socketId, {
+            socketId: socketId,
+            data: userWantToSkip?.data,
+          });
+        }
+        if (connectdWithUser) {
+          pendingConnections.textChat.set(connectdWithUser.socketId, {
+            socketId: connectdWithUser.socketId,
+            data: connectdWithUser?.data,
+          });
+          socket.to(connectdWithUser.socketId).emit("userSkippedChat", "");
+        }
       } else {
         let connectdWithUser = establishedConnections.videoChat.get(socketId);
+        let userWantToSkip = establishedConnections.videoChat.get(
+          connectdWithUser.socketId
+        );
+
         establishedConnections.videoChat.delete(connectdWithUser.socketId);
         establishedConnections.videoChat.delete(socketId);
 
         //again move users to pending connections
-        pendingConnections.videoChat.set(socketId);
-        pendingConnections.videoChat.set(connectdWithUser.socketId);
+        if (userWantToSkip) {
+          pendingConnections.videoChat.set(socketId, {
+            socketId: socketId,
+            data: userWantToSkip.data,
+          });
+        }
+        if (connectdWithUser) {
+          pendingConnections.videoChat.set(connectdWithUser.socketId, {
+            socketId: connectdWithUser?.socketId,
+            data: connectdWithUser.data,
+          });
+        }
+      }
+      console.log(
+        "909 connection after skipping---",
+        establishedConnections.textChat.entries(),
+        pendingConnections.textChat.entries()
+      );
+    });
+
+    // leave the text chat or video chat room;
+    socket.on("leaveChat", ({ socketId, roomType }) => {
+      if (roomType === ROOM_TYPE_CONST.text) {
+        let connectdWithUser = establishedConnections.textChat.get(socketId);
+
+        establishedConnections.textChat.delete(socketId);
+
+        //again move users to pending connections
+        // pendingConnections.textChat.set(socketId); // have left the chat so we don't move him to any chat room
+        if (connectdWithUser) {
+          establishedConnections.textChat.delete(connectdWithUser.socketId);
+          pendingConnections.textChat.set(connectdWithUser.socketId, {
+            socketId: connectdWithUser.socketId,
+            data: connectdWithUser.data,
+          });
+        }
+      } else {
+        let connectdWithUser = establishedConnections.videoChat.get(socketId);
+
+        establishedConnections.videoChat.delete(socketId);
+
+        //again move users to pending connections
+        if (connectdWithUser) {
+          establishedConnections.videoChat.delete(connectdWithUser.socketId);
+          pendingConnections.videoChat.set(connectdWithUser.socketId);
+        }
       }
     });
 
@@ -124,16 +200,15 @@ const initializeSocket = (io) => {
         socket
           .to(receiver.socketId)
           .emit("gotMsgFromRandomConnection", { msg: msg });
-        console.log("909 receiver msg send", receiver, msg);
       } else {
         console.log(
           `No established connection found for senderSocketId: ${senderSocketId}`
         );
       }
+      console.log("send msg called backend----", msg, senderSocketId);
     });
 
     socket.on("disconnect", () => {
-      console.log("socket Id user discounnted", socket.id);
       activeUsers.online.delete(socket.id);
       activeUsers.textRoom.delete(socket.id);
       activeUsers.videoRoom.delete(socket.id);
@@ -148,7 +223,7 @@ const initializeSocket = (io) => {
           connectedWithInTextChat.socketId
         );
 
-        socket.to(connectedWithInTextChat).emit("needReconnect");
+        handleReconnect(socket, connectedWithInTextChat.socketId);
       }
       const connectedWithInVideoChat = establishedConnections.videoChat.get(
         socket.id
@@ -157,7 +232,8 @@ const initializeSocket = (io) => {
         establishedConnections.videoChat.delete(
           connectedWithInVideoChat.socketId
         );
-        socket.to(connectedWithInTextChat).emit("needReconnect");
+        // socket.to(connectedWithInVideoChat).emit("needReconnect");
+        handleReconnect(socket, connectedWithInVideoChat.socketId);
       }
       //user discounnect then the user connected with this connection should return back to pendingConnections map -------------
 
@@ -166,11 +242,6 @@ const initializeSocket = (io) => {
 
       establishedConnections.textChat.delete(socket.id);
       establishedConnections.videoChat.delete(socket.id);
-
-      console.log(
-        "909 establishedConnections",
-        establishedConnections.textChat.entries()
-      );
 
       emitOnlineUser();
     });
